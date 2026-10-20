@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Clearance{% endblock %}</title>
+  <meta name="description" content="Shareable guides for creating an OAuth app and getting it approved.">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">C</span>
+      <span>
+        <span class="brand-name">Clearance</span>
+        <span class="brand-sub">OAuth approval guides</span>
+      </span>
+    </a>
+    <nav class="top-nav">
+      <a href="/#examples">Examples</a>
+      <a href="/#labels">Evidence labels</a>
+    </nav>
+  </header>
+  <main>
+    {% block body %}{% endblock %}
+  </main>
+  <footer class="foot">
+    <p>Every sentence you might act on is marked tested, sourced, or uncertain. Provider rules change. Read the date on the guide.</p>
+  </footer>
+</body>
+</html>

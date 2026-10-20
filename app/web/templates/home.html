@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Clearance — OAuth approval guides{% endblock %}
+{% block body %}
+<section class="hero">
+  <p class="eyebrow">For developers connecting an app to an agent</p>
+  <h1>Know the wait before you create the OAuth app.</h1>
+  <p class="lede">Type a provider. Get a guide you can share: how hard setup is, how long approval takes, which scopes trigger review, and which steps only a person can do.</p>
+  <form class="lookup" action="/guides" method="post">
+    <label>
+      <span>App</span>
+      <input name="name" required placeholder="Linear, Xero, Shopify…" autocomplete="off">
+    </label>
+    <label>
+      <span>Docs or homepage <em>optional</em></span>
+      <input name="website" placeholder="https://developer.example.com" inputmode="url">
+    </label>
+    <button type="submit">Build a guide</button>
+  </form>
+  {% if not live_ready %}
+  <p class="banner">
+    The example guides below are ready.
+    Live generation is off until you set {{ live_gap | join(" and ") }}.
+    See <code>.env.example</code>.
+  </p>
+  {% else %}
+  <p class="banner ready">Live generation is on. An unfamiliar app usually takes one to two minutes.</p>
+  {% endif %}
+</section>
+
+<section class="questions" aria-label="What a guide answers">
+  <h2>Four questions, same shape every time</h2>
+  <ol>
+    <li><strong>How hard is this?</strong><span>Easy, medium, or hard, with the reason next to the label.</span></li>
+    <li><strong>How long until I can ship?</strong><span>A first test call, then the wait for production approval.</span></li>
+    <li><strong>What will block me?</strong><span>The rejection you are likely to hit, and the next move.</span></li>
+    <li><strong>What can an agent do?</strong><span>Drafts and checklists versus the clicks that need you.</span></li>
+  </ol>
+</section>
+
+<section id="examples">
+  <div class="section-head">
+    <h2>Reviewed examples</h2>
+    <p>Four providers, four different approval problems. These pages render with no API keys.</p>
+  </div>
+  <div class="cards">
+    {% for guide in curated %}
+    <a class="card difficulty-{{ guide.verdict.difficulty.value }}" href="/g/{{ guide.slug }}">
+      <span class="stamp">{{ guide.verdict.difficulty.value }}</span>
+      <h3>{{ guide.app_name }}</h3>
+      <p>{{ guide.summary }}</p>
+      <span class="card-more">Open the guide</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="labels">
+  <div class="section-head">
+    <h2>How a claim earns its label</h2>
+    <p>If a chip is missing a link, the sentence is not something to build a launch plan on.</p>
+  </div>
+  <ul class="legend">
+    <li><span class="chip tested">Tested</span> A read-only browser check opened the page and the sentence is what that page showed. The reviewed examples have none: nobody logged into a provider console to write them.</li>
+    <li><span class="chip sourced">Sourced</span> The sentence cites a page. On a live guide, that page is one this run actually opened.</li>
+    <li><span class="chip uncertain">Uncertain</span> The pages did not say it. The note tells you what is missing. Treat it as a lead.</li>
+  </ul>
+</section>
+
+<section id="library">
+  <div class="section-head">
+    <h2>Guides generated on this machine</h2>
+    {% if generated %}
+    <p>Saved under <code>data/</code>. A reviewed example is never overwritten; a fresh Gmail run is stored as <code>gmail-draft</code>.</p>
+    {% else %}
+    <p>Nothing yet. Guides you generate are saved here and get their own link. The reviewed examples stay as they are.</p>
+    {% endif %}
+  </div>
+  {% if generated %}
+  <ul class="library">
+    {% for guide in generated %}
+    <li>
+      <a href="/g/{{ guide.slug }}">{{ guide.app_name }}</a>
+      <span class="stamp small">{{ guide.verdict.difficulty.value }}</span>
+      <span class="muted">checked {{ guide.last_checked.isoformat() }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

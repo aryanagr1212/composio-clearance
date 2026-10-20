@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}{{ guide.app_name }} OAuth guide — Clearance{% endblock %}
+{% macro chip(claim) -%}
+  {% if claim.source_url %}
+  <a class="chip {{ claim.confidence.value }}" href="{{ claim.source_url }}" rel="noopener noreferrer">{{ claim.confidence.value }}</a>
+  {% else %}
+  <span class="chip {{ claim.confidence.value }}">{{ claim.confidence.value }}</span>
+  {% endif %}
+{%- endmacro %}
+{% macro claimblock(claim) -%}
+  <p class="claim">{{ claim.text }} {{ chip(claim) }}
+    {% if claim.note %}<span class="claim-note">{{ claim.note }}</span>{% endif %}
+  </p>
+{%- endmacro %}
+{% block body %}
+<article class="guide difficulty-{{ guide.verdict.difficulty.value }}">
+  <header class="guide-head">
+    <p class="eyebrow">
+      {% if guide.generated_by == "curated" %}Reviewed example{% else %}Generated guide{% endif %}
+      · checked {{ guide.last_checked.isoformat() }}
+    </p>
+    <h1>{{ guide.app_name }}</h1>
+    <p class="lede">{{ guide.summary }}</p>
+    <div class="share">
+      <label>
+        <span>Share this guide</span>
+        <input id="permalink" readonly value="{{ request.base_url }}g/{{ guide.slug }}">
+      </label>
+      <button type="button" id="copy-md" data-md="/g/{{ guide.slug }}.md">Copy as Markdown</button>
+      <a class="text-link" href="/g/{{ guide.slug }}.md">Raw Markdown</a>
+      <a class="text-link" href="/api/guides/{{ guide.slug }}">JSON</a>
+    </div>
+    <p id="copy-status" class="copy-status" role="status"></p>
+  </header>
+
+  <section class="verdict" aria-label="Verdict">
+    <div>
+      <span class="kicker">Difficulty</span>
+      <strong class="stamp big">{{ guide.verdict.difficulty.value }}</strong>
+    </div>
+    <div>
+      <span class="kicker">Review</span>
+      <strong>{{ guide.verdict.review_required.value | replace("_", " ") | title }}</strong>
+    </div>
+    <div>
+      <span class="kicker">Evidence</span>
+      <strong>{{ counts.tested }} tested · {{ counts.sourced }} sourced · {{ counts.uncertain }} uncertain</strong>
+    </div>
+  </section>
+
+  <section>
+    <h2>Verdict</h2>
+    <dl class="facts">
+      <div>
+        <dt>Why this difficulty</dt>
+        <dd>{{ claimblock(guide.verdict.difficulty_reason) }}</dd>
+      </div>
+      <div>
+        <dt>Time to a first test call</dt>
+        <dd>{{ claimblock(guide.verdict.time_to_first_test) }}</dd>
+      </div>
+      <div>
+        <dt>Time to production approval</dt>
+        <dd>{{ claimblock(guide.verdict.time_to_production) }}</dd>
+      </div>
+      <div>
+        <dt>Is review required?</dt>
+        <dd>{{ claimblock(guide.verdict.review_summary) }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Requirements</h2>
+    <ul class="checks">
+      {% for item in guide.requirements %}
+      <li>
+        <span class="need {{ item.needed.value }}">{{ item.needed.value | replace("_", " ") }}</span>
+        <div>
+          <h3>{{ item.name }}</h3>
+          {{ claimblock(item.detail) }}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section>
+    <h2>Steps</h2>
+    <ol class="steps">
+      {% for step in guide.steps %}
+      <li>
+        <div class="step-top">
+          <h3>{{ step.title }}</h3>
+          <span class="who who-{{ step.who.value }}">{% if step.who.value == "human" %}You{% elif step.who.value == "agent" %}Agent{% else %}Either{% endif %}</span>
+        </div>
+        {% for paragraph in step.instructions.split("\n\n") %}
+        <p>{{ paragraph }}</p>
+        {% endfor %}
+        {% if step.console_url %}
+        <p><a class="console" href="{{ step.console_url }}" rel="noopener noreferrer">{{ step.console_label or step.console_url }}</a></p>
+        {% endif %}
+        {{ claimblock(step.detail) }}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <section>
+    <h2>Scopes and redirect URIs</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Scope</th><th>Tier</th><th>Triggers review</th><th>Use it for</th></tr>
+        </thead>
+        <tbody>
+          {% for scope in guide.scopes %}
+          <tr>
+            <td><code>{{ scope.name }}</code></td>
+            <td>{{ scope.tier }}</td>
+            <td>{{ scope.triggers_review.value | replace("_", " ") | title }}</td>
+            <td>{{ scope.purpose }} {{ chip(scope.detail) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <h3>Which scopes to ask for</h3>
+    {{ claimblock(guide.scope_advice) }}
+    <h3>Redirect URI rules</h3>
+    {{ claimblock(guide.redirect_rules) }}
+  </section>
+
+  <section class="split">
+    <div>
+      <h2>An agent can prepare</h2>
+      <ul class="work">
+        {% for item in guide.agent_can_do %}
+        <li>
+          <h3>{{ item.task }}</h3>
+          {{ claimblock(item.detail) }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div>
+      <h2>You have to do</h2>
+      <ul class="work">
+        {% for item in guide.human_must_do %}
+        <li>
+          <h3>{{ item.task }}</h3>
+          {{ claimblock(item.detail) }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Blockers</h2>
+    <div class="blockers">
+      {% for blocker in guide.blockers %}
+      <article>
+        <h3>{{ blocker.title }}</h3>
+        {{ claimblock(blocker.what_happens) }}
+        <p class="unstick">{{ blocker.how_to_unstick }}</p>
+        {% if blocker.contact %}<p class="contact">Contact: {{ blocker.contact }}</p>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if guide.composio.managed or guide.composio.custom_app %}
+  <section>
+    <h2>If you are wiring this into Composio</h2>
+    {% if guide.composio.managed %}
+    <h3>Managed auth</h3>
+    {{ claimblock(guide.composio.managed) }}
+    {% endif %}
+    {% if guide.composio.custom_app %}
+    <h3>Your own OAuth app</h3>
+    {{ claimblock(guide.composio.custom_app) }}
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <section class="meta">
+    <h2>Pages behind this guide</h2>
+    <ul class="sources">
+      {% for source in guide.sources %}
+      <li><a href="{{ source.url }}" rel="noopener noreferrer">{{ source.title }}</a></li>
+      {% endfor %}
+    </ul>
+    <h2>How this guide was made</h2>
+    <ol class="log">
+      {% for event in guide.research_log %}
+      <li>
+        <span class="kicker">{{ event.kind }}</span>
+        {{ event.detail }}
+        {% if event.url %} <a href="{{ event.url }}" rel="noopener noreferrer">source</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    {% if guide.generated_by == "agent" %}
+    <form class="again" action="/guides" method="post">
+      <input type="hidden" name="name" value="{{ guide.app_name }}">
+      <input type="hidden" name="fresh" value="1">
+      <button type="submit" {% if not live_ready %}disabled{% endif %}>Regenerate from the docs</button>
+    </form>
+    {% elif live_ready %}
+    <form class="again" action="/guides" method="post">
+      <input type="hidden" name="name" value="{{ guide.app_name }}">
+      <input type="hidden" name="fresh" value="1">
+      <button type="submit">Run the agent anyway</button>
+      <p class="claim-note">The reviewed {{ guide.app_name }} guide stays at this URL. The agent draft is saved separately.</p>
+    </form>
+    {% endif %}
+  </section>
+</article>
+<script>
+  const button = document.getElementById("copy-md");
+  const status = document.getElementById("copy-status");
+  button.addEventListener("click", async () => {
+    try {
+      const response = await fetch(button.dataset.md);
+      const text = await response.text();
+      await navigator.clipboard.writeText(text);
+      status.textContent = "Markdown copied.";
+    } catch (err) {
+      status.textContent = "Could not copy. Open Raw Markdown and copy from there.";
+    }
+  });
+</script>
+{% endblock %}

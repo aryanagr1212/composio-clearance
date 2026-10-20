@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Not found — Clearance{% endblock %}
+{% block body %}
+<section class="notice">
+  <p class="eyebrow">Missing</p>
+  <h1>No {{ kind }} named “{{ slug }}”.</h1>
+  <p class="lede">Reviewed examples live at /g/gmail, /g/slack, /g/notion, and /g/hubspot. A generated guide exists only on the machine that created it.</p>
+  <form class="lookup" action="/guides" method="post">
+    <label>
+      <span>App</span>
+      <input name="name" required placeholder="App name">
+    </label>
+    <button type="submit">Build a guide</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Building {{ job.name }} — Clearance{% endblock %}
+{% block body %}
+<section class="job" id="job" data-id="{{ job.id }}">
+  <p class="eyebrow">Live generation</p>
+  <h1>Building a guide for {{ job.name }}</h1>
+  <p class="lede">Search, then the provider’s docs, then a structured guide. This usually finishes in one to two minutes. Leave this tab open.</p>
+  <p class="stage" id="stage">{{ job.stage }}</p>
+  <p class="elapsed" id="elapsed"></p>
+  <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+  <div id="failure" class="failure" hidden></div>
+</section>
+<script>
+  const root = document.getElementById("job");
+  const stage = document.getElementById("stage");
+  const elapsed = document.getElementById("elapsed");
+  const bar = document.getElementById("bar");
+  const failure = document.getElementById("failure");
+  async function poll() {
+    const response = await fetch("/api/jobs/" + root.dataset.id);
+    if (!response.ok) {
+      failure.hidden = false;
+      failure.textContent = "This job is no longer on the server. Start the guide again.";
+      return;
+    }
+    const job = await response.json();
+    stage.textContent = job.stage;
+    elapsed.textContent = job.elapsed_seconds + "s elapsed";
+    bar.style.width = job.status === "done" ? "100%" : Math.min(90, 15 + job.elapsed_seconds) + "%";
+    if (job.status === "done" && job.slug) {
+      window.location = "/g/" + job.slug;
+      return;
+    }
+    if (job.status === "error") {
+      failure.hidden = false;
+      failure.textContent = job.error || "Generation failed.";
+      bar.style.width = "100%";
+      bar.classList.add("bad");
+      return;
+    }
+    window.setTimeout(poll, 1200);
+  }
+  poll();
+</script>
+{% endblock %}
