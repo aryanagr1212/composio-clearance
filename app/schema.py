@@ -57,6 +57,9 @@ class Who(str, Enum):
 
 
 def _enum_lower(value: object) -> object:
+    # Some models (Gemini) wrap an enum in a claim object: {"text": "easy", ...}.
+    if isinstance(value, dict) and isinstance(value.get("text"), str):
+        value = value["text"]
     if isinstance(value, str):
         return value.strip().lower()
     return value

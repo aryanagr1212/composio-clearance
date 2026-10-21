@@ -62,6 +62,27 @@ TAVILY_API_KEY=...          # or SERPER_API_KEY
 
 `LLM_PROVIDER=auto` uses OpenAI when `OPENAI_API_KEY` is set, otherwise Anthropic. `SEARCH_PROVIDER=auto` uses Tavily, otherwise Serper. If the provider rejects the model name, the job page shows that error and names the env var to change.
 
+### Free option: Gemini + Serper
+
+No card is needed for either key. Gemini is called through Google's OpenAI-compatible endpoint, so no extra SDK is involved.
+
+1. Create a Gemini key at [Google AI Studio](https://aistudio.google.com/apikey).
+2. Create a Serper key at [serper.dev](https://serper.dev) (2,500 free searches).
+
+```bash
+LLM_PROVIDER=openai
+OPENAI_API_KEY=<your Gemini key>
+OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+OPENAI_MODEL=gemini-2.5-flash
+OPENAI_REASONING_EFFORT=low   # optional; cuts a run from ~150 s to ~35 s
+SEARCH_PROVIDER=serper
+SERPER_API_KEY=<your Serper key>
+```
+
+Tested on Zoom, Dropbox, and Linear: each run took 33 to 39 seconds with `OPENAI_REASONING_EFFORT=low`, and every guide passed schema validation on the first try. Gemini sometimes wraps an enum such as `difficulty` in a claim object. The schema unwraps it instead of failing. Free-tier Gemini has per-minute rate limits, so back-to-back runs can return a 429. Wait a minute and retry.
+
+If your network answers DNS with "fake IP" addresses (198.18.0.0/15, common in sandboxes and some proxies), the fetcher refuses every page as non-public. Set `ALLOW_FAKE_IP_DNS=1` only on such a network. It is off by default.
+
 With no keys, submitting an unknown app returns a page that says live generation is off and names the missing variables. Submitting Gmail, Slack, Notion, or HubSpot still opens the reviewed guide.
 
 Optional read-only browser check, which is the only way a live guide earns a **tested** label:

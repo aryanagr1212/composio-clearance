@@ -24,6 +24,8 @@ class Settings(BaseModel):
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
     openai_model: str = "gpt-4.1-mini"
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_reasoning_effort: str | None = None
     anthropic_model: str = "claude-sonnet-4-5"
     search_provider: str = "auto"
     tavily_api_key: str | None = None
@@ -54,6 +56,8 @@ class Settings(BaseModel):
             openai_api_key=clean("OPENAI_API_KEY"),
             anthropic_api_key=clean("ANTHROPIC_API_KEY"),
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
+            openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").strip() or "https://api.openai.com/v1",
+            openai_reasoning_effort=clean("OPENAI_REASONING_EFFORT"),
             anthropic_model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5").strip() or "claude-sonnet-4-5",
             search_provider=os.getenv("SEARCH_PROVIDER", "auto").strip().lower() or "auto",
             tavily_api_key=clean("TAVILY_API_KEY"),

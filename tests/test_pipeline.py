@@ -198,3 +198,62 @@ def _draft(good: str) -> dict:
         ],
     )
     return draft.model_dump(mode="json")
+
+
+def test_openai_base_url_is_used(monkeypatch):
+    from app.pipeline import extract
+
+    seen = {}
+
+    class FakeResponse:
+        status_code = 200
+        text = ""
+
+        def json(self):
+            return {"choices": [{"finish_reason": "stop", "message": {"content": '{"ok": true}'}}]}
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, headers=None, json=None):
+            seen["url"] = url
+            return FakeResponse()
+
+    monkeypatch.setattr(extract.httpx, "AsyncClient", FakeClient)
+    settings = Settings(
+        llm_provider="openai",
+        openai_api_key="test",
+        openai_base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+    result = asyncio.run(extract.complete_json(settings, "sys", "user"))
+    assert result == {"ok": True}
+    assert seen["url"] == "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+
+
+def test_openai_base_url_defaults_to_openai(monkeypatch):
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    assert Settings().openai_base_url == "https://api.openai.com/v1"
+
+
+def test_fake_ip_dns_is_off_by_default(monkeypatch):
+    from app.pipeline import urls
+
+    monkeypatch.delenv("ALLOW_FAKE_IP_DNS", raising=False)
+    assert not urls._fake_ip_allowed("198.18.0.1")
+    monkeypatch.setenv("ALLOW_FAKE_IP_DNS", "1")
+    assert urls._fake_ip_allowed("198.18.0.1")
+    assert not urls._fake_ip_allowed("10.0.0.1")
+
+
+def test_enum_wrapped_in_claim_object_is_unwrapped():
+    from app.schema import _enum_lower
+
+    assert _enum_lower({"text": " Easy ", "confidence": "uncertain"}) == "easy"
+    assert _enum_lower("Hard") == "hard"

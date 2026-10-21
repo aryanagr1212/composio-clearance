@@ -10,6 +10,7 @@ already connected, beyond checking each hop.
 from __future__ import annotations
 
 import ipaddress
+import os
 import socket
 from urllib.parse import urljoin, urlparse, urlunparse
 
@@ -21,6 +22,20 @@ class UnsafeURL(ResearchError):
 
 
 _BLOCKED_HOSTS = {"localhost", "metadata.google.internal"}
+
+# Some sandboxes and corporate proxies answer every DNS lookup with a
+# "fake IP" from 198.18.0.0/15 and route the real connection themselves.
+# Off by default. Set ALLOW_FAKE_IP_DNS=1 only on such a network.
+_FAKE_IP_NET = ipaddress.ip_network("198.18.0.0/15")
+
+
+def _fake_ip_allowed(address: str) -> bool:
+    if os.getenv("ALLOW_FAKE_IP_DNS", "").strip().lower() not in {"1", "true", "yes"}:
+        return False
+    try:
+        return ipaddress.ip_address(address) in _FAKE_IP_NET
+    except ValueError:
+        return False
 
 
 def canonicalize(url: str) -> str:
@@ -62,7 +77,7 @@ def ensure_public_http_url(url: str) -> str:
         raise UnsafeURL(f"Could not resolve {host}.") from exc
     for info in infos:
         address = info[4][0]
-        if _host_is_blocked(address):
+        if _host_is_blocked(address) and not _fake_ip_allowed(address):
             raise UnsafeURL(f"Refusing to open {host}; it resolves to a non-public address.")
     return url
 

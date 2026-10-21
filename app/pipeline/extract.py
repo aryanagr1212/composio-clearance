@@ -70,6 +70,9 @@ async def _openai(settings: Settings, system: str, user: str) -> dict:
         ],
         "response_format": {"type": "json_object"},
     }
+    if settings.openai_reasoning_effort:
+        # Thinking models (o-series, Gemini 2.5) accept this. Lower is faster.
+        payload["reasoning_effort"] = settings.openai_reasoning_effort
     body = await _post_openai(settings, payload)
     choice = (body.get("choices") or [{}])[0]
     if choice.get("finish_reason") == "length":
@@ -90,7 +93,7 @@ async def _post_openai(settings: Settings, payload: dict) -> dict:
     }
     async with httpx.AsyncClient(timeout=120) as client:
         response = await client.post(
-            "https://api.openai.com/v1/chat/completions",
+            f"{settings.openai_base_url.rstrip('/')}/chat/completions",
             headers=headers,
             json=payload,
         )
@@ -99,7 +102,7 @@ async def _post_openai(settings: Settings, payload: dict) -> dict:
         if response.status_code == 400 and "temperature" in response.text:
             payload = {key: value for key, value in payload.items() if key != "temperature"}
             response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
+                f"{settings.openai_base_url.rstrip('/')}/chat/completions",
                 headers=headers,
                 json=payload,
             )
